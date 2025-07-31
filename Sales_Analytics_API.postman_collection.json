@@ -1,0 +1,232 @@
+{
+  "info": {
+    "name": "Sales Analytics Microservice API",
+    "description": "Complete API collection for the Sales Call Analytics microservice meeting all requirements",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "sample_call_id",
+      "value": "call_fae9c32a-fc9d-47d5-a3a6-fba453c43f64",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Health check endpoint to verify service status"
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Calls - Basic",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls?limit=10&offset=0",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Number of calls to return (1-100)"
+            },
+            {
+              "key": "offset",
+              "value": "0",
+              "description": "Pagination offset"
+            }
+          ]
+        },
+        "description": "Get paginated list of all calls"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Calls - Filter by Agent",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls?agent_id=agent_001&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls"],
+          "query": [
+            {
+              "key": "agent_id",
+              "value": "agent_001",
+              "description": "Filter by specific agent ID"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get calls filtered by specific agent"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Calls - Filter by Sentiment",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls?min_sentiment=0.5&max_sentiment=1.0&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls"],
+          "query": [
+            {
+              "key": "min_sentiment",
+              "value": "0.5",
+              "description": "Minimum sentiment score (-1 to 1)"
+            },
+            {
+              "key": "max_sentiment",
+              "value": "1.0",
+              "description": "Maximum sentiment score (-1 to 1)"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get calls filtered by sentiment range (positive calls)"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Calls - Filter by Date Range",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls?from_date=2025-07-01T00:00:00&to_date=2025-08-01T00:00:00&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls"],
+          "query": [
+            {
+              "key": "from_date",
+              "value": "2025-07-01T00:00:00",
+              "description": "Start date (ISO format)"
+            },
+            {
+              "key": "to_date",
+              "value": "2025-08-01T00:00:00",
+              "description": "End date (ISO format)"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get calls within specific date range"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Calls - Combined Filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls?agent_id=agent_009&min_sentiment=0.8&limit=5",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls"],
+          "query": [
+            {
+              "key": "agent_id",
+              "value": "agent_009",
+              "description": "Filter by agent"
+            },
+            {
+              "key": "min_sentiment",
+              "value": "0.8",
+              "description": "Only highly positive calls"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "description": "Example of combining multiple filters"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Specific Call",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls", "{{sample_call_id}}"]
+        },
+        "description": "Get complete details of a specific call by ID"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Call Recommendations",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}/recommendations",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "calls", "{{sample_call_id}}", "recommendations"]
+        },
+        "description": "Get 5 similar calls and 3 coaching nudges for a specific call"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Agent Analytics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/analytics/agents",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "analytics", "agents"]
+        },
+        "description": "Get agent performance leaderboard with sentiment, talk ratio, and call count averages"
+      },
+      "response": []
+    },
+    {
+      "name": "API Documentation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/docs",
+          "host": ["{{base_url}}"],
+          "path": ["docs"]
+        },
+        "description": "Interactive API documentation (Swagger UI)"
+      },
+      "response": []
+    }
+  ]
+}
