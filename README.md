@@ -2,8 +2,6 @@
 
 A production-ready Python microservice that analyzes sales call transcripts and provides AI-powered insights through a comprehensive REST API.
 
-> **🚀 New to this project?** See [SETUP.md](SETUP.md) for super-simple setup instructions!
-
 ## 🚀 Features
 
 - **Real AI Processing**: Uses sentence-transformers and Hugging Face models for genuine ML insights
@@ -13,6 +11,8 @@ A production-ready Python microservice that analyzes sales call transcripts and 
 - **Comprehensive API**: Full CRUD operations with advanced filtering
 - **Production Ready**: Proper error handling, validation, and testing
 - **Interview Optimized**: Clean codebase perfect for technical demonstrations
+- **🔐 JWT Authentication**: Secure token-based authentication system
+- **👥 Multi-user Support**: User authentication with personalized access
 
 ## 🚀 Complete Setup Guide
 
@@ -178,6 +178,48 @@ curl "http://localhost:8000/api/v1/analytics/agents"
 ```
 Returns agent performance leaderboard with metrics.
 
+## 🔐 JWT Authentication
+
+All API endpoints (except `/health` and `/auth/login`) require JWT authentication.
+
+### Demo Users
+- **Username**: `admin` / **Password**: `secret` / **Email**: admin@salesanalytics.com
+- **Username**: `analyst` / **Password**: `secret` / **Email**: analyst@salesanalytics.com  
+- **Username**: `demo` / **Password**: `secret` / **Email**: demo@salesanalytics.com
+
+### Authentication Flow
+
+#### 1. Login to Get Token
+```bash
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"secret"}'
+```
+
+#### 2. Use Token in Requests
+```bash
+curl -X GET "http://localhost:8000/api/v1/calls?limit=5" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+#### 3. Check User Info
+```bash
+curl -X GET "http://localhost:8000/auth/me" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### PowerShell Examples
+```powershell
+# Login
+$body = '{"username":"admin","password":"secret"}'
+$response = Invoke-RestMethod -Uri "http://localhost:8000/auth/login" -Method Post -ContentType "application/json" -Body $body
+$token = $response.access_token
+
+# Use token
+$headers = @{"Authorization" = "Bearer $token"}
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/calls?limit=5" -Headers $headers
+```
+
 ## 🧪 Testing
 
 ### Automated Test Suite
@@ -322,6 +364,7 @@ CREATE INDEX idx_start_time ON call_records(start_time);
 ├── app/
 │   ├── __init__.py
 │   ├── main.py              # FastAPI application & routes
+│   ├── auth.py              # JWT authentication system
 │   ├── models.py            # SQLAlchemy database models  
 │   ├── schemas.py           # Pydantic response models
 │   ├── database.py          # Database connection setup

@@ -39,3 +39,18 @@ class CallsListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+# JWT Authentication Schemas
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    user_info: dict
+
+class UserInfo(BaseModel):
+    username: str
+    email: str

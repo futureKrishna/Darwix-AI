@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Sales Analytics Microservice API",
-    "description": "Complete API collection for the Sales Call Analytics microservice meeting all requirements",
+    "name": "Sales Analytics API with JWT Authentication",
+    "description": "Complete API collection for Sales Call Analytics microservice with JWT authentication testing",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -11,222 +11,480 @@
       "type": "string"
     },
     {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Store JWT token after login"
+    },
+    {
       "key": "sample_call_id",
       "value": "call_fae9c32a-fc9d-47d5-a3a6-fba453c43f64",
       "type": "string"
     }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/health",
-          "host": ["{{base_url}}"],
-          "path": ["health"]
-        },
-        "description": "Health check endpoint to verify service status"
-      },
-      "response": []
-    },
-    {
-      "name": "Get All Calls - Basic",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls?limit=10&offset=0",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls"],
-          "query": [
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login - Admin User",
+          "event": [
             {
-              "key": "limit",
-              "value": "10",
-              "description": "Number of calls to return (1-100)"
-            },
-            {
-              "key": "offset",
-              "value": "0",
-              "description": "Pagination offset"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Extract JWT token from response and set as collection variable",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', responseJson.access_token);",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.expect(responseJson.access_token).to.not.be.empty;",
+                  "    });",
+                  "    pm.test('User info returned', function () {",
+                  "        pm.expect(responseJson.user_info.username).to.eql('admin');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed', function () {",
+                  "        pm.expect.fail('Login should succeed');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "description": "Get paginated list of all calls"
-      },
-      "response": []
-    },
-    {
-      "name": "Get Calls - Filter by Agent",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls?agent_id=agent_001&limit=10",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls"],
-          "query": [
-            {
-              "key": "agent_id",
-              "value": "agent_001",
-              "description": "Filter by specific agent ID"
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"secret\"\n}"
             },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with admin user to get JWT token"
+          }
+        },
+        {
+          "name": "Login - Analyst User",
+          "event": [
             {
-              "key": "limit",
-              "value": "10"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', responseJson.access_token);",
+                  "    pm.test('Analyst login successful', function () {",
+                  "        pm.expect(responseJson.user_info.username).to.eql('analyst');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"analyst\",\n    \"password\": \"secret\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with analyst user"
+          }
         },
-        "description": "Get calls filtered by specific agent"
-      },
-      "response": []
-    },
-    {
-      "name": "Get Calls - Filter by Sentiment",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls?min_sentiment=0.5&max_sentiment=1.0&limit=10",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls"],
-          "query": [
+        {
+          "name": "Login - Demo User",
+          "event": [
             {
-              "key": "min_sentiment",
-              "value": "0.5",
-              "description": "Minimum sentiment score (-1 to 1)"
-            },
-            {
-              "key": "max_sentiment",
-              "value": "1.0",
-              "description": "Maximum sentiment score (-1 to 1)"
-            },
-            {
-              "key": "limit",
-              "value": "10"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', responseJson.access_token);",
+                  "    pm.test('Demo login successful', function () {",
+                  "        pm.expect(responseJson.user_info.username).to.eql('demo');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"demo\",\n    \"password\": \"secret\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with demo user"
+          }
         },
-        "description": "Get calls filtered by sentiment range (positive calls)"
-      },
-      "response": []
-    },
-    {
-      "name": "Get Calls - Filter by Date Range",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls?from_date=2025-07-01T00:00:00&to_date=2025-08-01T00:00:00&limit=10",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls"],
-          "query": [
-            {
-              "key": "from_date",
-              "value": "2025-07-01T00:00:00",
-              "description": "Start date (ISO format)"
+        {
+          "name": "Get Current User Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
             },
+            "description": "Get current authenticated user information"
+          }
+        },
+        {
+          "name": "Login - Invalid Credentials",
+          "event": [
             {
-              "key": "to_date",
-              "value": "2025-08-01T00:00:00",
-              "description": "End date (ISO format)"
-            },
-            {
-              "key": "limit",
-              "value": "10"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid login blocked', function () {",
+                  "    pm.expect(pm.response.code).to.eql(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
-        },
-        "description": "Get calls within specific date range"
-      },
-      "response": []
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Test invalid login credentials"
+          }
+        }
+      ],
+      "description": "Authentication endpoints for JWT login"
     },
     {
-      "name": "Get Calls - Combined Filters",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls?agent_id=agent_009&min_sentiment=0.8&limit=5",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls"],
-          "query": [
-            {
-              "key": "agent_id",
-              "value": "agent_009",
-              "description": "Filter by agent"
+      "name": "🔓 Public Endpoints",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
             },
-            {
-              "key": "min_sentiment",
-              "value": "0.8",
-              "description": "Only highly positive calls"
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
             },
+            "description": "Health check endpoint (no authentication required)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📞 Call Management",
+      "item": [
+        {
+          "name": "Get All Calls - Basic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of calls to return (1-100)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Pagination offset"
+                }
+              ]
+            },
+            "description": "Get paginated list of calls with basic filters"
+          }
+        },
+        {
+          "name": "Get All Calls - With Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls?limit=5&agent_id=agent_001&min_sentiment=0.5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "agent_id",
+                  "value": "agent_001",
+                  "description": "Filter by specific agent"
+                },
+                {
+                  "key": "min_sentiment",
+                  "value": "0.5",
+                  "description": "Minimum sentiment score (-1 to 1)"
+                },
+                {
+                  "key": "max_sentiment",
+                  "value": "",
+                  "description": "Maximum sentiment score",
+                  "disabled": true
+                },
+                {
+                  "key": "from_date",
+                  "value": "",
+                  "description": "Start date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "to_date",
+                  "value": "",
+                  "description": "End date (ISO format)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get calls with advanced filtering options"
+          }
+        },
+        {
+          "name": "Get All Calls - Date Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls?from_date=2024-01-01T00:00:00&to_date=2024-12-31T23:59:59&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls"],
+              "query": [
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01T00:00:00",
+                  "description": "Start date"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31T23:59:59",
+                  "description": "End date"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get calls within specific date range"
+          }
+        },
+        {
+          "name": "Get Single Call",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls", "{{sample_call_id}}"]
+            },
+            "description": "Get detailed information for a specific call"
+          }
+        },
+        {
+          "name": "Get Call Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}/recommendations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls", "{{sample_call_id}}", "recommendations"]
+            },
+            "description": "Get similar calls based on content analysis"
+          }
+        }
+      ],
+      "description": "Call management endpoints with JWT authentication"
+    },
+    {
+      "name": "📊 Analytics",
+      "item": [
+        {
+          "name": "Get Agent Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/agents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "agents"]
+            },
+            "description": "Get agent performance leaderboard with sentiment, talk ratio, and call count averages"
+          }
+        }
+      ],
+      "description": "Analytics endpoints for performance metrics"
+    },
+    {
+      "name": "🚫 Test Unauthorized Access",
+      "item": [
+        {
+          "name": "Access Calls Without Token",
+          "event": [
             {
-              "key": "limit",
-              "value": "5"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unauthorized access blocked', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
-          ]
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calls",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calls"]
+            },
+            "description": "Test accessing protected endpoint without authentication"
+          }
         },
-        "description": "Example of combining multiple filters"
-      },
-      "response": []
+        {
+          "name": "Access Analytics Without Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unauthorized analytics access blocked', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/agents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "agents"]
+            },
+            "description": "Test accessing analytics without authentication"
+          }
+        }
+      ],
+      "description": "Test security by attempting unauthorized access"
     },
     {
-      "name": "Get Specific Call",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls", "{{sample_call_id}}"]
+      "name": "📚 Documentation",
+      "item": [
+        {
+          "name": "API Documentation (Swagger)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs",
+              "host": ["{{base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "Interactive API documentation (Swagger UI)"
+          }
         },
-        "description": "Get complete details of a specific call by ID"
-      },
-      "response": []
-    },
-    {
-      "name": "Get Call Recommendations",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/calls/{{sample_call_id}}/recommendations",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "calls", "{{sample_call_id}}", "recommendations"]
-        },
-        "description": "Get 5 similar calls and 3 coaching nudges for a specific call"
-      },
-      "response": []
-    },
-    {
-      "name": "Get Agent Analytics",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/v1/analytics/agents",
-          "host": ["{{base_url}}"],
-          "path": ["api", "v1", "analytics", "agents"]
-        },
-        "description": "Get agent performance leaderboard with sentiment, talk ratio, and call count averages"
-      },
-      "response": []
-    },
-    {
-      "name": "API Documentation",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/docs",
-          "host": ["{{base_url}}"],
-          "path": ["docs"]
-        },
-        "description": "Interactive API documentation (Swagger UI)"
-      },
-      "response": []
+        {
+          "name": "Alternative Documentation (ReDoc)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/redoc",
+              "host": ["{{base_url}}"],
+              "path": ["redoc"]
+            },
+            "description": "Alternative API documentation (ReDoc)"
+          }
+        }
+      ]
     }
   ]
 }
