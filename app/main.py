@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status, WebSocket, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.database import get_db
@@ -11,6 +12,9 @@ from app.auth import (
 from typing import Optional
 from datetime import datetime, timedelta
 import math
+import asyncio
+import random
+import json
 
 app = FastAPI(
     title="Sales Call Analytics API", 
@@ -236,3 +240,53 @@ async def get_agent_analytics(
         )
         for row in analytics
     ]
+
+@app.websocket("/ws/sentiment/{call_id}")
+async def websocket_sentiment(websocket: WebSocket, call_id: str):
+    """WebSocket endpoint that streams real-time sentiment for a specific call"""
+    await websocket.accept()
+    
+    try:
+        # Send initial message
+        await websocket.send_text(json.dumps({
+            "call_id": call_id,
+            "message": f"Connected to sentiment stream for call {call_id}",
+            "timestamp": datetime.now().isoformat()
+        }))
+        
+        # Stream random sentiment values to simulate real-time updates
+        while True:
+            # Generate random sentiment value between -1 and 1
+            sentiment_value = round(random.uniform(-1.0, 1.0), 3)
+            
+            # Create sentiment update message
+            sentiment_update = {
+                "call_id": call_id,
+                "sentiment": sentiment_value,
+                "timestamp": datetime.now().isoformat(),
+                "status": "streaming"
+            }
+            
+            # Send sentiment update
+            await websocket.send_text(json.dumps(sentiment_update))
+            
+            # Wait 2 seconds before next update
+            await asyncio.sleep(2)
+            
+    except WebSocketDisconnect:
+        print(f"WebSocket disconnected cleanly for call {call_id}")
+    except ConnectionClosed:
+        print(f"WebSocket connection closed for call {call_id}")
+    except Exception as e:
+        # Only log actual errors, not normal disconnections
+        error_msg = str(e)
+        if "1005" not in error_msg and "1006" not in error_msg and "1000" not in error_msg:
+            print(f"WebSocket error for call {call_id}: {e}")
+        else:
+            print(f"WebSocket closed normally for call {call_id}")
+        
+        # Close websocket if still open
+        try:
+            await websocket.close()
+        except:
+            pass  # Already closed

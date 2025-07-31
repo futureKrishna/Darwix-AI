@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Sentiment Stream Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .disconnect {
+            background-color: #dc3545;
+        }
+        .disconnect:hover {
+            background-color: #c82333;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .sentiment-value {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .sentiment-positive {
+            color: #28a745;
+        }
+        .sentiment-negative {
+            color: #dc3545;
+        }
+        .sentiment-neutral {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 WebSocket Sentiment Stream Test</h1>
+        <p>Test the <code>/ws/sentiment/{call_id}</code> WebSocket endpoint</p>
+        
+        <div class="input-group">
+            <label for="callId">Call ID:</label>
+            <input type="text" id="callId" value="call_fae9c32a-fc9d-47d5-a3a6-fba453c43f64" placeholder="Enter call ID">
+        </div>
+        
+        <div>
+            <button id="connectBtn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <h3>Real-time Sentiment Updates:</h3>
+        <div id="messages" class="messages">
+            <p style="color: #6c757d; font-style: italic;">Click "Connect" to start receiving sentiment updates...</p>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let messageCount = 0;
+
+        function connect() {
+            const callId = document.getElementById('callId').value;
+            if (!callId) {
+                alert('Please enter a call ID');
+                return;
+            }
+
+            const wsUrl = `ws://localhost:8000/ws/sentiment/${callId}`;
+            websocket = new WebSocket(wsUrl);
+
+            websocket.onopen = function(event) {
+                console.log('WebSocket connected');
+                updateStatus('Connected', true);
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                clearMessages();
+            };
+
+            websocket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                displayMessage(data);
+            };
+
+            websocket.onclose = function(event) {
+                console.log('WebSocket disconnected');
+                updateStatus('Disconnected', false);
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+            };
+
+            websocket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateStatus('Error occurred', false);
+            };
+        }
+
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+            }
+        }
+
+        function updateStatus(message, isConnected) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${isConnected ? 'connected' : 'disconnected'}`;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            messageCount = 0;
+        }
+
+        function displayMessage(data) {
+            messageCount++;
+            const messagesContainer = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+
+            if (data.sentiment !== undefined) {
+                const sentimentClass = data.sentiment > 0.1 ? 'sentiment-positive' : 
+                                     data.sentiment < -0.1 ? 'sentiment-negative' : 'sentiment-neutral';
+                
+                messageElement.innerHTML = `
+                    <div><strong>Message #${messageCount}</strong></div>
+                    <div>Call ID: ${data.call_id}</div>
+                    <div>Sentiment: <span class="sentiment-value ${sentimentClass}">${data.sentiment}</span></div>
+                    <div>Time: ${new Date(data.timestamp).toLocaleTimeString()}</div>
+                `;
+            } else {
+                messageElement.innerHTML = `
+                    <div><strong>Message #${messageCount}</strong></div>
+                    <div>Call ID: ${data.call_id}</div>
+                    <div>Message: ${data.message}</div>
+                    <div>Time: ${new Date(data.timestamp).toLocaleTimeString()}</div>
+                `;
+            }
+
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>

@@ -485,6 +485,24 @@
           }
         }
       ]
+    },
+    {
+      "name": "📡 WebSocket Endpoints",
+      "item": [
+        {
+          "name": "WebSocket Sentiment Stream Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs",
+              "host": ["{{base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "WebSocket endpoint: ws://localhost:8000/ws/sentiment/{call_id}\n\nThis endpoint streams real-time sentiment updates for a specific call ID.\n\nFeatures:\n- Connects via WebSocket protocol\n- Streams sentiment values between -1.0 and 1.0\n- Updates every 2 seconds\n- Includes timestamps and call ID\n\nExample usage:\n- Connect to: ws://localhost:8000/ws/sentiment/call_123\n- Receives JSON messages with sentiment updates\n\nMessage format:\n{\n  \"call_id\": \"call_123\",\n  \"sentiment\": 0.745,\n  \"timestamp\": \"2025-08-01T10:30:00.123456\",\n  \"status\": \"streaming\"\n}\n\nNote: Use WebSocket client tools or JavaScript WebSocket API to test this endpoint."
+          }
+        }
+      ]
     }
   ]
 }
