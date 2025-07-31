@@ -1,7 +1,7 @@
 """
 PRODUCTION MICROSERVICE DEMO SCRIPT
 ===================================
-Use this to demonstrate your solution during the interview
+Interactive demonstration of the Sales Analytics API capabilities
 """
 
 import requests
@@ -24,7 +24,7 @@ def print_json(data, max_items=3):
 
 def demo_api():
     print("SALES ANALYTICS MICROSERVICE - PRODUCTION DEMO")
-    print("Meeting ALL Technical Requirements")
+    print("Comprehensive API Testing and Feature Showcase")
     
     print_section("1. HEALTH CHECK")
     response = requests.get(f"{BASE_URL}/health")

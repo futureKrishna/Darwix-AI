@@ -381,6 +381,19 @@
             },
             "description": "Get agent performance leaderboard with sentiment, talk ratio, and call count averages"
           }
+        },
+        {
+          "name": "Trigger Analytics Recalculation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/recalculate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "recalculate"]
+            },
+            "description": "Manually trigger background analytics recalculation (runs same logic as nightly job)"
+          }
         }
       ],
       "description": "Analytics endpoints for performance metrics"

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, Query, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from websockets.exceptions import ConnectionClosed
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
@@ -15,12 +15,19 @@ import math
 import asyncio
 import random
 import json
+import threading
+import time
 
 app = FastAPI(
     title="Sales Call Analytics API", 
     version="1.1.0",
     description="Sales call analytics API with JWT authentication"
 )
+
+# Start background scheduler on app startup
+@app.on_event("startup")
+async def startup_event():
+    schedule_nightly_job()
 
 def cosine_similarity(a, b):
     if not a or not b or len(a) != len(b):
@@ -34,6 +41,62 @@ def cosine_similarity(a, b):
         return 0.0
     
     return dot_product / (magnitude_a * magnitude_b)
+
+# Background job for nightly analytics recalculation
+async def recalculate_analytics_background():
+    """Background task to recalculate analytics nightly"""
+    try:
+        from app.database import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as db:
+            print(f"🔄 Starting nightly analytics recalculation at {datetime.now().isoformat()}")
+            
+            # Recalculate agent analytics (same logic as the API endpoint)
+            query = select(
+                CallRecord.agent_id,
+                func.avg(CallRecord.customer_sentiment_score).label('avg_sentiment'),
+                func.avg(CallRecord.agent_talk_ratio).label('avg_talk_ratio'),
+                func.count(CallRecord.id).label('total_calls')
+            ).group_by(CallRecord.agent_id)
+            
+            result = await db.execute(query)
+            analytics = result.all()
+            
+            # Log the recalculated analytics
+            print(f"✅ Analytics recalculated for {len(analytics)} agents:")
+            for row in analytics:
+                print(f"   Agent {row.agent_id}: {row.total_calls} calls, avg sentiment: {row.avg_sentiment:.3f}")
+            
+            print(f"✅ Nightly analytics recalculation completed at {datetime.now().isoformat()}")
+            
+    except Exception as e:
+        print(f"❌ Error during analytics recalculation: {e}")
+
+def schedule_nightly_job():
+    """Schedule nightly analytics recalculation"""
+    def run_scheduler():
+        while True:
+            now = datetime.now()
+            # Calculate seconds until 2 AM next day
+            next_run = now.replace(hour=2, minute=0, second=0, microsecond=0)
+            if now.hour >= 2:
+                next_run += timedelta(days=1)
+            
+            sleep_seconds = (next_run - now).total_seconds()
+            print(f"📅 Next analytics recalculation scheduled for: {next_run.isoformat()}")
+            
+            time.sleep(sleep_seconds)
+            
+            # Run the background task
+            try:
+                asyncio.run(recalculate_analytics_background())
+            except Exception as e:
+                print(f"❌ Scheduler error: {e}")
+    
+    # Start scheduler in background thread
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    print("🚀 Background analytics scheduler started")
 
 # Public endpoints (no authentication required)
 @app.get("/health")
@@ -240,6 +303,19 @@ async def get_agent_analytics(
         )
         for row in analytics
     ]
+
+@app.post("/api/v1/analytics/recalculate")
+async def trigger_analytics_recalculation(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    """Manually trigger analytics recalculation (for testing purposes)"""
+    background_tasks.add_task(recalculate_analytics_background)
+    return {
+        "message": "Analytics recalculation triggered",
+        "timestamp": datetime.now().isoformat(),
+        "triggered_by": current_user["username"]
+    }
 
 @app.websocket("/ws/sentiment/{call_id}")
 async def websocket_sentiment(websocket: WebSocket, call_id: str):
