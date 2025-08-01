@@ -379,3 +379,105 @@ async def websocket_sentiment(websocket: WebSocket, call_id: str):
             await websocket.close()
         except:
             pass  # Already closed
+
+@app.websocket("/ws")
+async def websocket_general(websocket: WebSocket):
+    """General WebSocket endpoint for demo and testing"""
+    import os
+    await websocket.accept()
+    
+    streaming = False
+    
+    try:
+        # Send welcome message
+        await websocket.send_text(json.dumps({
+            "type": "connection",
+            "message": "Connected to Sales Analytics WebSocket",
+            "timestamp": datetime.now().isoformat(),
+            "status": "connected"
+        }))
+        
+        # In testing mode, only send initial message and close
+        if os.getenv("TESTING"):
+            await websocket.close()
+            return
+        
+        # Keep connection alive and handle messages
+        while True:
+            try:
+                # Wait for message from client with timeout
+                message = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                
+                try:
+                    data = json.loads(message)
+                    
+                    if data.get("type") == "start_streaming":
+                        streaming = True
+                        await websocket.send_text(json.dumps({
+                            "type": "streaming_status",
+                            "message": "Streaming started",
+                            "status": "streaming"
+                        }))
+                        
+                    elif data.get("type") == "stop_streaming":
+                        streaming = False
+                        await websocket.send_text(json.dumps({
+                            "type": "streaming_status", 
+                            "message": "Streaming stopped",
+                            "status": "stopped"
+                        }))
+                        
+                    elif data.get("type") == "custom_message":
+                        await websocket.send_text(json.dumps({
+                            "type": "echo",
+                            "message": f"Echo: {data.get('data', {}).get('message', 'No message')}",
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                        
+                except json.JSONDecodeError:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Invalid JSON format",
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                    
+            except asyncio.TimeoutError:
+                # No message received, continue loop
+                pass
+            
+            # Send streaming data if streaming is enabled
+            if streaming:
+                analytics_data = {
+                    "total_calls": random.randint(100, 500),
+                    "avg_sentiment": round(random.uniform(-0.5, 0.8), 3),
+                    "active_agents": random.randint(5, 15),
+                    "conversion_rate": round(random.uniform(0.15, 0.35), 3)
+                }
+                
+                await websocket.send_text(json.dumps({
+                    "type": "analytics_update",
+                    "data": analytics_data,
+                    "timestamp": datetime.now().isoformat()
+                }))
+                
+                await asyncio.sleep(3)  # Send updates every 3 seconds
+            else:
+                await asyncio.sleep(0.1)  # Small sleep to prevent busy waiting
+                
+    except WebSocketDisconnect:
+        print("General WebSocket disconnected cleanly")
+    except ConnectionClosed:
+        print("General WebSocket connection closed")
+    except Exception as e:
+        # Only log actual errors, not normal disconnections
+        error_msg = str(e)
+        if "1005" not in error_msg and "1006" not in error_msg and "1000" not in error_msg:
+            print(f"General WebSocket error: {e}")
+        else:
+            print("General WebSocket closed normally")
+        
+        # Close websocket if still open
+        try:
+            await websocket.close()
+        except:
+            pass  # Already closed

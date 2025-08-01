@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](./htmlcov/index.html)
 
-A high-performance Python microservice for analyzing sales call transcripts with AI-powered insights, real-time streaming capabilities, and comprehensive CI/CD pipeline.
+A high-performance Python microservice for analyzing sales call transcripts with AI-powered insights, real-time streaming capabilities, and comprehensive testing framework.
 
 ## 🚀 Features
 
@@ -22,15 +22,13 @@ A high-performance Python microservice for analyzing sales call transcripts with
 
 ### Security & Authentication
 - **🔐 JWT Authentication**: Secure token-based authentication system
-- **👥 Multi-user Support**: Role-based access control with user management
-- **🔒 Security Scanning**: Automated vulnerability detection with Bandit and Safety
+- **� Admin Access Control**: Single admin user with full API access (expandable for multi-user)
 
 ### DevOps & CI/CD
-- **🔄 CI/CD Pipeline**: Comprehensive GitHub Actions workflow with testing, security, and Docker deployment
-- **🐋 Containerization**: Docker and Docker Compose support for easy deployment
-- **📈 Code Quality**: Black, isort, flake8, pylint, and mypy for code quality
+- ** Containerization**: Docker and Docker Compose support for easy deployment
+- **📈 Code Quality**: Code structure follows Python best practices
 - **🧪 Test Coverage**: 94% test coverage with pytest and comprehensive test suite
-- **📝 Pre-commit Hooks**: Automated code quality checks on every commit
+- **⚙️ CI/CD Ready**: GitHub Actions workflow template included (requires setup)
 
 ## 🛠️ Tech Stack
 
@@ -50,17 +48,15 @@ A high-performance Python microservice for analyzing sales call transcripts with
 
 ### DevOps & Deployment
 - **Docker & Docker Compose** - Containerization and orchestration
-- **GitHub Actions** - CI/CD pipeline automation
+- **GitHub Actions** - CI/CD pipeline template (requires setup)
 - **Alembic** - Database migrations
 - **pytest** - Comprehensive testing framework
 
 ### Development Tools
-- **Black** - Code formatting
-- **isort** - Import sorting
-- **flake8 & pylint** - Code linting
-- **mypy** - Static type checking
-- **Bandit** - Security vulnerability scanning
-- **pre-commit** - Git hooks for code quality
+- **pytest** - Testing framework with 94% coverage
+- **httpx** - Async HTTP client for testing
+- **pytest-asyncio** - Async test support
+- **pytest-mock** - Mocking utilities
 
 ## 🏃‍♂️ Quick Start
 
@@ -130,17 +126,35 @@ curl http://localhost:8000/health
 python production_test.py
 
 # Run full test suite
-pytest test_final_clean.py -v
+pytest tests.py -v
 ```
 
 ### 6. Test WebSocket (Real-time Features)
+
+**Option 1: WebSocket Demo Interface**
+Open `websocket_demo.html` in your browser for a complete WebSocket testing interface with manual controls for connect/disconnect, streaming, and custom messages.
+
+**Option 2: Browser Developer Console**
 ```javascript
 // Open browser developer console and run:
+const ws = new WebSocket('ws://localhost:8000/ws');
+ws.onmessage = (event) => console.log('Message:', JSON.parse(event.data));
+ws.onopen = () => ws.send(JSON.stringify({type: 'custom_message', data: {message: 'Hello!'}}));
+```
+
+**Option 3: Test Specific Call Sentiment Streaming**
+```javascript
+// For sentiment streaming on a specific call:
 const ws = new WebSocket('ws://localhost:8000/ws/sentiment/call_f7a5985b-5220-4361-b627-f9fa1a841763');
 ws.onmessage = (event) => console.log('Sentiment:', JSON.parse(event.data));
 ```
 
-*See [WEBSOCKET_TESTING.md](./WEBSOCKET_TESTING.md) for detailed WebSocket testing guide.*
+**WebSocket Troubleshooting:**
+- ❌ Connection fails? Make sure server is running: `python fast_run.py`
+- ❌ CORS issues? Server runs on `0.0.0.0:8000` allowing all origins
+- ❌ Auto-reload breaking connection? Use: `uvicorn app.main:app --host 0.0.0.0 --port 8000` (no reload)
+
+*Use [websocket_demo.html](./websocket_demo.html) for comprehensive WebSocket testing with both general and call-specific endpoints.*
 
 ## 🔐 Authentication
 
@@ -223,10 +237,11 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### Real-time Features
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| WebSocket | `/ws` | General WebSocket demo endpoint |
 | WebSocket | `/ws/sentiment/{call_id}` | Real-time sentiment streaming |
 | GET | `/health` | Health check endpoint |
 
-> **💡 WebSocket Testing**: See [WEBSOCKET_TESTING.md](./WEBSOCKET_TESTING.md) for multiple ways to test real-time functionality, including browser console, Python scripts, and online tools.
+> **💡 WebSocket Testing**: Use [websocket_demo.html](./websocket_demo.html) for comprehensive testing with endpoint selection, manual controls, and real-time message display.
 
 ### Query Parameters (Calls Endpoint)
 - `limit` (1-100): Number of results per page
@@ -255,46 +270,44 @@ docker pull futurekrishna/darwix-ai:latest
 docker run -p 8000:8000 futurekrishna/darwix-ai:latest
 ```
 
-## 🔄 CI/CD Pipeline
+## 🔄 CI/CD Pipeline Template
 
-### GitHub Actions Workflow
-The project includes a comprehensive CI/CD pipeline that runs on every push and pull request:
+### GitHub Actions Workflow (Setup Required)
+The project includes a GitHub Actions workflow template that can be configured for:
 
-#### Pipeline Jobs
-1. **🧪 Test Job** - Runs tests with 90% coverage requirement
-2. **🔒 Security Job** - Bandit security scanning and vulnerability checks
-3. **🐋 Docker Job** - Docker image building and testing
-4. **📝 Lint Job** - Code formatting and quality checks
-5. **⚡ Performance Job** - Performance testing (main branch only)
-6. **📢 Notification Job** - Pipeline status notifications
+#### Pipeline Jobs (Template)
+1. **🧪 Test Job** - Runs pytest with coverage reporting
+2. **🐋 Docker Job** - Docker image building and testing  
+3. **📝 Quality Job** - Code quality checks (when configured)
 
-#### Local CI Testing
+#### Local Testing
 ```bash
-# Run full local CI pipeline
-make ci-local
+# Run comprehensive tests
+pytest tests.py -v --cov=app --cov-report=term-missing
 
-# Or use platform-specific scripts
-./test-ci.sh      # Linux/Mac
-test-ci.bat       # Windows
+# Run specific test categories
+pytest tests.py::test_health_check -v
+pytest tests.py -k "websocket" -v
+pytest tests.py -k "ai_insights" -v
 
-# Individual checks
-make test         # Run tests with coverage
-make lint         # Run linting checks
-make format       # Format code
-make type-check   # Run type checking
-make security     # Run security scans
+# Test with production mode
+python production_test.py
+
+# Quick development test
+python fast_run.py &
+curl http://localhost:8000/health
 ```
 
-### Development Setup
+### Development Workflow
 ```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
+# Install all dependencies
+pip install -r requirements.txt
 
-# Set up pre-commit hooks
-pre-commit install
+# Run tests before committing
+pytest tests.py -v
 
-# Available make commands
-make help
+# Start development server
+make dev-up       # Complete development setup
 ```
 
 ## 📊 Testing & Coverage
@@ -368,12 +381,11 @@ TESTING="1"                               # Disable scheduler during testing
 ## 🔧 Development
 
 ### Code Quality Standards
-- **Formatting**: Black (88 character line length)
-- **Import Sorting**: isort with Black profile
-- **Linting**: flake8 and pylint with custom rules
-- **Type Checking**: mypy with strict settings
-- **Security**: Bandit security linting
-- **Testing**: pytest with 90% coverage minimum
+- **Testing**: pytest with 94% coverage achieved
+- **Async Support**: Full async/await pattern implementation
+- **Type Hints**: Comprehensive type annotations
+- **Error Handling**: Structured exception handling with fallbacks
+- **Documentation**: Comprehensive API docs with OpenAPI/Swagger
 
 ### Architecture Overview
 ```
@@ -386,9 +398,11 @@ Sales Analytics API
 │   ├── auth.py           # JWT authentication and authorization
 │   └── ai_insights.py    # AI/ML processing and insights
 ├── alembic/              # Database migrations
-├── .github/workflows/    # CI/CD pipeline
-├── tests/                # Test suite
-└── docs/                 # Documentation
+├── .github/workflows/    # CI/CD pipeline template
+├── tests.py              # Comprehensive test suite (47 tests)
+├── websocket_demo.html   # WebSocket testing interface
+├── DESIGN_NOTES.md       # Technical architecture documentation
+└── requirements.txt      # Python dependencies
 ```
 
 ## 🤝 Contributing
@@ -397,8 +411,8 @@ Sales Analytics API
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Make your changes
-4. Run tests: `make test`
-5. Run CI checks: `make ci-local`
+4. Run tests: `pytest tests.py -v`
+5. Test locally: `python fast_run.py`
 6. Commit with conventional commits: `git commit -m "feat: add new feature"`
 7. Push and create a pull request
 

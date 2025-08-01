@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Analytics WebSocket Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .connecting { background-color: #fff3cd; color: #856404; }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .message.sent { background-color: #e3f2fd; text-align: right; }
+        .message.received { background-color: #f1f8e9; }
+        .message.error { background-color: #ffebee; color: #c62828; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        button:hover { opacity: 0.8; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Sales Analytics WebSocket Demo</h1>
+        
+        <div class="info">
+            <strong>Connected to Call ID:</strong> call_f7a5985b-5220-4361-b627-f9fa1a841763
+        </div>
+
+        <div id="status" class="status disconnected">
+            Status: Disconnected
+        </div>
+
+        <div class="controls">
+            <button id="connectBtn" class="btn-primary" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>Disconnect</button>
+            <button id="startStreamBtn" class="btn-success" onclick="startStreaming()" disabled>Start Streaming</button>
+            <button id="stopStreamBtn" class="btn-warning" onclick="stopStreaming()" disabled>Stop Streaming</button>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="messageInput" placeholder="Send custom message..." disabled>
+            <button id="sendBtn" class="btn-primary" onclick="sendMessage()" disabled>Send</button>
+        </div>
+
+        <div id="messages" class="messages">
+            <div class="message">Welcome! Click Connect to start...</div>
+        </div>
+
+        <div class="controls">
+            <button onclick="clearMessages()" class="btn-warning">Clear Messages</button>
+            <button onclick="testConnection()" class="btn-primary">Test Connection</button>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isStreaming = false;
+
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = `Status: ${message}`;
+            statusDiv.className = `status ${className}`;
+        }
+
+        function addMessage(message, type = 'received') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateButtons() {
+            const isConnected = socket && socket.readyState === WebSocket.OPEN;
+            
+            document.getElementById('connectBtn').disabled = isConnected;
+            document.getElementById('disconnectBtn').disabled = !isConnected;
+            document.getElementById('startStreamBtn').disabled = !isConnected || isStreaming;
+            document.getElementById('stopStreamBtn').disabled = !isConnected || !isStreaming;
+            document.getElementById('messageInput').disabled = !isConnected;
+            document.getElementById('sendBtn').disabled = !isConnected;
+        }
+
+        function connect() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                addMessage('Already connected!', 'error');
+                return;
+            }
+
+            const endpoint = 'ws://localhost:8000/ws/sentiment/call_f7a5985b-5220-4361-b627-f9fa1a841763';
+            updateStatus('Connecting...', 'connecting');
+            addMessage(`🔌 Attempting to connect to sentiment endpoint`);
+            
+            try {
+                socket = new WebSocket(endpoint);
+                
+                socket.onopen = function(event) {
+                    updateStatus('Connected', 'connected');
+                    addMessage('✅ Connected to WebSocket server successfully!');
+                    updateButtons();
+                };
+                
+                socket.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'analytics_update') {
+                            addMessage(`📊 Analytics Update: ${JSON.stringify(data.data, null, 2)}`);
+                        } else if (data.type === 'streaming_status') {
+                            addMessage(`🔄 Streaming Status: ${data.message}`);
+                        } else if (data.type === 'connection') {
+                            addMessage(`🎉 Server says: ${data.message}`);
+                        } else if (data.type === 'echo') {
+                            addMessage(`📡 ${data.message}`);
+                        } else if (data.type === 'error') {
+                            addMessage(`⚠️ Server Error: ${data.message}`, 'error');
+                        } else if (data.call_id) {
+                            // Handle sentiment streaming data - show only sentiment value
+                            addMessage(`💭 Sentiment: ${data.sentiment || 'N/A'}`);
+                        } else {
+                            addMessage(`📨 Message: ${event.data}`);
+                        }
+                    } catch (e) {
+                        addMessage(`📨 Raw Message: ${event.data}`);
+                    }
+                };
+                
+                socket.onerror = function(error) {
+                    updateStatus('Connection Error', 'disconnected');
+                    addMessage(`❌ WebSocket Error: Failed to connect to server. Make sure the server is running on localhost:8000`, 'error');
+                    addMessage(`💡 Try running: python fast_run.py`, 'error');
+                    updateButtons();
+                };
+                
+                socket.onclose = function(event) {
+                    updateStatus('Disconnected', 'disconnected');
+                    let reason = 'Unknown';
+                    if (event.code === 1000) reason = 'Normal closure';
+                    else if (event.code === 1001) reason = 'Going away';
+                    else if (event.code === 1006) reason = 'Connection lost';
+                    else if (event.reason) reason = event.reason;
+                    
+                    addMessage(`🔌 Connection closed: Code ${event.code}, Reason: ${reason}`);
+                    isStreaming = false;
+                    updateButtons();
+                };
+                
+            } catch (error) {
+                updateStatus('Connection Failed', 'disconnected');
+                addMessage(`❌ Connection Error: ${error.message}`, 'error');
+                addMessage(`💡 Make sure the server is running: python fast_run.py`, 'error');
+                updateButtons();
+            }
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+                socket = null;
+                isStreaming = false;
+                updateStatus('Disconnected', 'disconnected');
+                addMessage('🔌 Disconnected from server');
+                updateButtons();
+            }
+        }
+
+        function startStreaming() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                addMessage('❌ Not connected to server', 'error');
+                return;
+            }
+
+            const message = JSON.stringify({
+                type: 'start_streaming',
+                data: { interval: 5 }
+            });
+            
+            socket.send(message);
+            isStreaming = true;
+            addMessage(`📤 Sent: Start streaming request`, 'sent');
+            updateButtons();
+        }
+
+        function stopStreaming() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                addMessage('❌ Not connected to server', 'error');
+                return;
+            }
+
+            const message = JSON.stringify({
+                type: 'stop_streaming'
+            });
+            
+            socket.send(message);
+            isStreaming = false;
+            addMessage(`📤 Sent: Stop streaming request`, 'sent');
+            updateButtons();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) {
+                addMessage('❌ Please enter a message', 'error');
+                return;
+            }
+
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                addMessage('❌ Not connected to server', 'error');
+                return;
+            }
+
+            try {
+                const payload = JSON.stringify({
+                    type: 'custom_message',
+                    data: { message: message }
+                });
+                
+                socket.send(payload);
+                addMessage(`📤 Sent: ${message}`, 'sent');
+                input.value = '';
+            } catch (error) {
+                addMessage(`❌ Error sending message: ${error.message}`, 'error');
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function testConnection() {
+            fetch('http://localhost:8000/health')
+                .then(response => response.json())
+                .then(data => {
+                    addMessage(`🏥 Health Check: ${JSON.stringify(data)}`);
+                })
+                .catch(error => {
+                    addMessage(`❌ Health Check Failed: ${error.message}`, 'error');
+                });
+        }
+
+        // Handle Enter key in message input
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize buttons state
+        updateButtons();
+    </script>
+</body>
+</html>
