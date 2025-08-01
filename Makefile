@@ -1,10 +1,11 @@
-.PHONY: help install install-dev test test-watch lint format type-check security clean docker-build docker-run docker-test ci-local
+.PHONY: help install install-dev test test-watch lint format type-check security clean docker-build docker-run docker-test ci-local dev-up
 
 # Default target
 help:
 	@echo "Available commands:"
 	@echo "  install       Install production dependencies"
 	@echo "  install-dev   Install development dependencies"
+	@echo "  dev-up        Complete development setup and start server"
 	@echo "  test          Run tests with coverage"
 	@echo "  test-watch    Run tests in watch mode"
 	@echo "  lint          Run all linting checks"
@@ -25,6 +26,14 @@ install-dev:
 	pip install -r requirements.txt
 	pip install -r requirements-dev.txt
 	pre-commit install
+
+# Complete development setup
+dev-up: install
+	@echo "🚀 Setting up development environment..."
+	alembic upgrade head || echo "Database already up to date"
+	@echo "✅ Database initialized"
+	@echo "🌐 Starting development server..."
+	python fast_run.py
 
 # Testing
 test:

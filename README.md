@@ -85,8 +85,30 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 2. Database Initialization
+```bash
+# Database auto-initializes on first run, but you can manually run:
+alembic upgrade head
+
+# Or use make command for full setup:
+make install      # Install dependencies
+make dev          # Start development server (auto-initializes DB)
+```
+
+### 3. Environment Variables (Optional)
+```bash
+# Create .env file (optional - has sensible defaults)
+JWT_SECRET_KEY="your-secret-key-change-in-production"
+DATABASE_URL="sqlite+aiosqlite:///./sales_analytics.db"
+OPENAI_API_KEY="your-openai-key"  # Optional: for enhanced AI features
+```
+
 ### 2. Start the Application
 ```bash
+# Quick start with make (recommended)
+make dev          # Starts development server with auto-reload
+
+# Or manual start:
 # Fast development mode (5 seconds startup)
 python fast_run.py
 
@@ -94,12 +116,12 @@ python fast_run.py
 python production_ml_run.py
 ```
 
-### 3. Access the API
+### 4. Access the API
 - **🌐 Server**: http://localhost:8000
 - **📚 API Documentation**: http://localhost:8000/docs
 - **🔍 Interactive Demo**: http://localhost:8000/redoc
 
-### 4. Test the API
+### 5. Test the API
 ```bash
 # Test basic health check
 curl http://localhost:8000/health
@@ -111,7 +133,7 @@ python production_test.py
 pytest test_final_clean.py -v
 ```
 
-### 5. Test WebSocket (Real-time Features)
+### 6. Test WebSocket (Real-time Features)
 ```javascript
 // Open browser developer console and run:
 const ws = new WebSocket('ws://localhost:8000/ws/sentiment/call_f7a5985b-5220-4361-b627-f9fa1a841763');
@@ -140,6 +162,45 @@ curl -X POST "http://localhost:8000/auth/login" \
 # 2. Use token in requests
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   "http://localhost:8000/api/v1/calls"
+```
+
+### Complete cURL Examples for All Endpoints
+```bash
+# Get JWT Token
+TOKEN=$(curl -s -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "secret"}' | jq -r '.access_token')
+
+# Health Check
+curl http://localhost:8000/health
+
+# Get All Calls (with pagination and filtering)
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/calls?limit=10&offset=0"
+
+# Filter calls by agent and sentiment
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/calls?agent_id=agent_001&min_sentiment=0.5"
+
+# Get specific call details
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/calls/call_f7a5985b-5220-4361-b627-f9fa1a841763"
+
+# Get AI recommendations for a call
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/calls/call_f7a5985b-5220-4361-b627-f9fa1a841763/recommendations"
+
+# Get agent analytics
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/analytics/agents"
+
+# Trigger analytics recalculation
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/api/v1/analytics/recalculate"
+
+# Get current user info
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8000/auth/me"
 ```
 
 ## 📡 API Endpoints
