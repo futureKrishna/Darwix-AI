@@ -1,0 +1,31 @@
+# Development dependencies
+# Code formatting and linting
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+pylint==3.0.3
+
+# Type checking
+mypy==1.8.0
+types-requests==2.31.0.20240125
+types-PyYAML==6.0.12.12
+
+# Security scanning
+bandit==1.7.5
+safety==2.3.4
+
+# Performance testing
+locust==2.17.0
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Git hooks
+pre-commit==3.6.0
+
+# Additional testing tools
+pytest-xdist==3.5.0  # Parallel test execution
+pytest-benchmark==4.0.0  # Performance benchmarks
+pytest-html==4.1.1  # HTML test reports
+pytest-json-report==1.5.0  # JSON test reports

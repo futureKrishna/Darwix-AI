@@ -1,8 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
 class CallRecordResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: str
     call_id: str
     agent_id: str
@@ -14,9 +16,6 @@ class CallRecordResponse(BaseModel):
     agent_talk_ratio: Optional[float] = None
     customer_sentiment_score: Optional[float] = None
     created_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 class CallRecommendation(BaseModel):
     call_id: str

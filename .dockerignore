@@ -1,0 +1,120 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+.mypy_cache/
+.tox/
+.nox/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD
+.github/
+.pre-commit-config.yaml
+.flake8
+mypy.ini
+pyproject.toml
+
+# Development files
+requirements-dev.txt
+test-ci.sh
+test-ci.bat
+Makefile
+
+# Test files
+test_*.py
+tests/
+htmlcov/
+coverage.xml
+bandit-report.json
+safety-report.json
+
+# Docker files (avoid recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Database files (will be mounted as volumes)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Model cache (will be downloaded at runtime)
+.cache/
+models/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# SSL certificates
+ssl/
+*.pem
+*.crt
+*.key
+
+# Environment files
+.env*
+!.env.example

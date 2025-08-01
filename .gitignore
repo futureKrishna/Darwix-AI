@@ -63,3 +63,28 @@ dmypy.json
 # Alembic
 # Keep alembic.ini and versions/ but ignore generated files
 alembic/__pycache__/
+
+# CI/CD artifacts
+htmlcov/
+coverage.xml
+bandit-report.json
+safety-report.json
+pytest-report.html
+pytest-report.json
+.tox/
+.nox/
+
+# Security
+secrets/
+private_keys/
+
+# Performance test results
+locust_reports/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+*.bak
+*.backup
